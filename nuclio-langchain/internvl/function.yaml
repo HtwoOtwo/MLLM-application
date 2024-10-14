@@ -1,0 +1,48 @@
+metadata:
+  name: internvl_1B
+  namespace: llm
+
+spec:
+  description: llm:internvl_1B
+  runtime: 'python:3.8'
+  handler: main:handler
+  eventTimeout: 30s
+  hpptport: 25888
+
+  build:
+    image: nuclio_llm:internvl
+    baseimage: intervl:v1
+    directives:
+      preCopy:
+        - kind: ENV
+          value: NVIDIA_VISIBLE_DEVICES=all
+        - kind: ENV
+          value: NVIDIA_DRIVER_CAPABILITIES=compute,utility
+        - kind: ENV
+          value: DEBIAN_FRONTEND=noninteractive
+        - kind: ENV
+          value: HF_ENDPOINT=https://hf-mirror.com
+        - kind: USER
+          value: root
+        - kind: WORKDIR
+          value: /opt/nuclio
+
+  triggers:
+    myHttpTrigger:
+      maxWorkers: 1
+      kind: 'http'
+      workerAvailabilityTimeoutMilliseconds: 10000
+      attributes:
+        maxRequestBodySize: 33554432 # 32MB
+
+  resources:
+    limits:
+      nvidia.com/gpu: 1
+
+  platform:
+    attributes:
+      restartPolicy:
+        name: always
+        maximumRetryCount: 3
+      mountMode: volume
+    

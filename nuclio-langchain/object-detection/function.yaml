@@ -1,0 +1,51 @@
+metadata:
+  name: llm:yolov8
+  namespace: llm
+  annotations:
+    name: llm:yolov8
+    type: detector
+    framework: pytorch
+    # change this accordingly to your model output/classes
+    spec: |
+      [
+        {"id": 0, "name": "person", "type": "polygon"}
+      ]
+spec:
+  description: llm:yolov8
+  runtime: 'python:3.9'
+  handler: main:handler
+  eventTimeout: 30s
+
+  build:
+    image: llm:yolov8
+    baseImage: yolov8:latest
+
+    directives:
+      preCopy:
+        - kind: ENV
+          value: NVIDIA_VISIBLE_DEVICES=all
+        - kind: ENV
+          value: NVIDIA_DRIVER_CAPABILITIES=compute,utility
+        - kind: ENV
+          value: DEBIAN_FRONTEND=noninteractive
+        - kind: ARG
+          value: CACHEBUST=1
+
+  triggers:
+    myHttpTrigger:
+      maxWorkers: 1
+      kind: 'http'
+      workerAvailabilityTimeoutMilliseconds: 10000
+      attributes:
+        maxRequestBodySize: 33554432 # 32MB
+
+  resources:
+    limits:
+      nvidia.com/gpu: 1
+
+  platform:
+    attributes:
+      restartPolicy:
+        name: always
+        maximumRetryCount: 3
+      mountMode: volume
